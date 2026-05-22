@@ -48,8 +48,6 @@ uv run tpts-sync-camera-time USERNAME PASSWORD http://CAMERA_IP
 
 ### Run in the container stack
 
-Mount the Frigate config directory at `/frigate-config` and start the image. No MQTT or camera-specific environment variables are required when the Frigate config is available.
+Mount the Frigate config directory at `/frigate-config` and start the image.
 
-```bash
-podman-compose up -d --build tpts
-```
+See <https://github.com/iovxw/my-frigate>
