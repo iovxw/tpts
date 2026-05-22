@@ -12,4 +12,4 @@ COPY sync_camera_time.py ./sync_camera_time.py
 
 RUN uv sync --frozen --no-dev
 
-CMD ["uv", "run", "tp-link-listener"]
+CMD ["uv", "run", "tpts"]

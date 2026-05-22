@@ -3,12 +3,13 @@ from __future__ import annotations
 import argparse
 import logging
 import os
+import socket
 import time
 from dataclasses import dataclass, field
 
 import paho.mqtt.client as mqtt
 
-from .frigate_config import CameraTarget, load_camera_targets
+from .frigate_config import CameraTarget, load_camera_targets, load_mqtt_config
 from .sync_camera_time import sync_camera_time
 
 
@@ -101,32 +102,6 @@ def parse_args() -> ListenerConfig:
         description="Listen for Frigate camera online events and sync TP-Link camera time."
     )
     parser.add_argument(
-        "--mqtt-host",
-        default=os.getenv("MQTT_HOST", "127.0.0.1"),
-        help="MQTT broker host",
-    )
-    parser.add_argument(
-        "--mqtt-port",
-        type=int,
-        default=int(os.getenv("MQTT_PORT", "1883")),
-        help="MQTT broker port",
-    )
-    parser.add_argument(
-        "--mqtt-topic-prefix",
-        default=os.getenv("MQTT_TOPIC_PREFIX", "frigate"),
-        help="Frigate MQTT topic prefix",
-    )
-    parser.add_argument(
-        "--mqtt-username",
-        default=os.getenv("MQTT_USERNAME"),
-        help="MQTT username",
-    )
-    parser.add_argument(
-        "--mqtt-password",
-        default=os.getenv("MQTT_PASSWORD"),
-        help="MQTT password",
-    )
-    parser.add_argument(
         "--frigate-config-path",
         default=os.getenv("FRIGATE_CONFIG_PATH", "/frigate-config/config.yml"),
         help="Path to the Frigate config.yml file",
@@ -138,15 +113,34 @@ def parse_args() -> ListenerConfig:
         help="Minimum seconds between syncs for the same camera",
     )
     args = parser.parse_args()
+    mqtt_config = load_mqtt_config(args.frigate_config_path)
+    if not mqtt_config.enabled:
+        raise ValueError(f"MQTT is disabled in {args.frigate_config_path}")
+
+    mqtt_host = normalize_mqtt_host(mqtt_config.host)
+
     return ListenerConfig(
-        mqtt_host=args.mqtt_host,
-        mqtt_port=args.mqtt_port,
-        mqtt_topic_prefix=args.mqtt_topic_prefix,
-        mqtt_username=args.mqtt_username,
-        mqtt_password=args.mqtt_password,
+        mqtt_host=mqtt_host,
+        mqtt_port=mqtt_config.port,
+        mqtt_topic_prefix=mqtt_config.topic_prefix,
+        mqtt_username=mqtt_config.username,
+        mqtt_password=mqtt_config.password,
         frigate_config_path=args.frigate_config_path,
         cooldown_seconds=args.cooldown_seconds,
     )
+
+
+def normalize_mqtt_host(host: str) -> str:
+    try:
+        socket.getaddrinfo(host, None)
+    except socket.gaierror:
+        LOGGER.warning(
+            "MQTT host %s from Frigate config is not resolvable from the listener container; using 127.0.0.1",
+            host,
+        )
+        return "127.0.0.1"
+
+    return host
 
 
 def build_client(config: ListenerConfig, service: CameraSyncService) -> mqtt.Client:

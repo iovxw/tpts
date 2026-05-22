@@ -58,7 +58,7 @@ wheels = [
 ]
 
 [[package]]
-name = "tp-link-listener"
+name = "tpts"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

@@ -1,7 +1,7 @@
 [project]
-name = "tp-link-listener"
+name = "tpts"
 version = "0.1.0"
-description = "Listen for Frigate camera online messages and sync TP-Link camera time"
+description = "Sync TP-Link camera time when Frigate reports cameras online"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -10,8 +10,8 @@ dependencies = [
 ]
 
 [project.scripts]
-tp-link-listener = "tp_link_listener.listener:main"
-tp-link-sync-camera-time = "tp_link_listener.sync_camera_time:main"
+tpts = "tpts.listener:main"
+tpts-sync-camera-time = "tpts.sync_camera_time:main"
 
 [build-system]
 requires = ["uv_build>=0.11.13,<0.12.0"]

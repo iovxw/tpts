@@ -16,7 +16,17 @@ class CameraTarget:
     password: str
 
 
-def load_camera_targets(config_path: str | Path) -> dict[str, CameraTarget]:
+@dataclass(frozen=True)
+class MqttConfig:
+    enabled: bool
+    host: str
+    port: int
+    topic_prefix: str
+    username: str | None
+    password: str | None
+
+
+def load_frigate_config(config_path: str | Path) -> dict[str, Any]:
     config_file = Path(config_path)
     with config_file.open("r", encoding="utf-8") as handle:
         raw_config = yaml.safe_load(handle)
@@ -24,6 +34,12 @@ def load_camera_targets(config_path: str | Path) -> dict[str, CameraTarget]:
     if not isinstance(raw_config, dict):
         raise ValueError(f"Frigate config {config_file} is not a YAML mapping")
 
+    return raw_config
+
+
+def load_camera_targets(config_path: str | Path) -> dict[str, CameraTarget]:
+    config_file = Path(config_path)
+    raw_config = load_frigate_config(config_file)
     cameras = raw_config.get("cameras")
     if not isinstance(cameras, dict):
         raise ValueError(f"Frigate config {config_file} does not define cameras")
@@ -35,6 +51,47 @@ def load_camera_targets(config_path: str | Path) -> dict[str, CameraTarget]:
         targets[camera_name] = parse_camera_target(camera_name, camera_config)
 
     return targets
+
+
+def load_mqtt_config(config_path: str | Path) -> MqttConfig:
+    config_file = Path(config_path)
+    raw_config = load_frigate_config(config_file)
+    mqtt_config = raw_config.get("mqtt")
+    if not isinstance(mqtt_config, dict):
+        raise ValueError(f"Frigate config {config_file} does not define mqtt settings")
+
+    enabled = mqtt_config.get("enabled", True)
+    if not isinstance(enabled, bool):
+        raise ValueError(f"Frigate config {config_file} has invalid mqtt.enabled")
+
+    host = mqtt_config.get("host")
+    if not isinstance(host, str) or not host:
+        raise ValueError(f"Frigate config {config_file} has invalid mqtt.host")
+
+    port = mqtt_config.get("port", 1883)
+    if not isinstance(port, int):
+        raise ValueError(f"Frigate config {config_file} has invalid mqtt.port")
+
+    topic_prefix = mqtt_config.get("topic_prefix", "frigate")
+    if not isinstance(topic_prefix, str) or not topic_prefix:
+        raise ValueError(f"Frigate config {config_file} has invalid mqtt.topic_prefix")
+
+    username = mqtt_config.get("user")
+    if username is not None and not isinstance(username, str):
+        raise ValueError(f"Frigate config {config_file} has invalid mqtt.user")
+
+    password = mqtt_config.get("password")
+    if password is not None and not isinstance(password, str):
+        raise ValueError(f"Frigate config {config_file} has invalid mqtt.password")
+
+    return MqttConfig(
+        enabled=enabled,
+        host=host,
+        port=port,
+        topic_prefix=topic_prefix,
+        username=username,
+        password=password,
+    )
 
 
 def parse_camera_target(camera_name: str, camera_config: dict[str, Any]) -> CameraTarget:
