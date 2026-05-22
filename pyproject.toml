@@ -1,0 +1,18 @@
+[project]
+name = "tp-link-listener"
+version = "0.1.0"
+description = "Listen for Frigate camera online messages and sync TP-Link camera time"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "paho-mqtt>=2.1.0",
+    "pyyaml>=6.0.3",
+]
+
+[project.scripts]
+tp-link-listener = "tp_link_listener.listener:main"
+tp-link-sync-camera-time = "tp_link_listener.sync_camera_time:main"
+
+[build-system]
+requires = ["uv_build>=0.11.13,<0.12.0"]
+build-backend = "uv_build"
